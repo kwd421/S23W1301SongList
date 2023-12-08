@@ -1,7 +1,8 @@
 package kr.ac.kumoh.ce.s20160042.s23w1301songlist
 
-import android.widget.RatingBar
-import androidx.compose.animation.AnimatedVisibility
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,32 +17,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.NavHost
+import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -63,7 +64,9 @@ fun SongApp(songList: List<Song>) {
         startDestination = SongScreen.List.name
     ) {
         composable(SongScreen.List.name) {
-            SongList(navController, songList)
+            SongList(songList) {
+                navController.navigate(it)
+            }
         }
         composable(
             route = "${SongScreen.Detail.name}/{index}",
@@ -79,24 +82,27 @@ fun SongApp(songList: List<Song>) {
 }
 
 @Composable
-fun SongList(navController: NavController, songList: List<Song>) {
+fun SongList(
+    songList: List<Song>,
+    onNavigateToDetail: (String) -> Unit
+) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 8.dp)
     ) {
         items(songList.size) {
-            SongItem(navController, songList, it)
+            SongItem(it, songList[it], onNavigateToDetail)
         }
     }
 }
 
 @Composable
-fun SongItem(navController: NavController, songList: List<Song>, index: Int) {
+fun SongItem(index: Int, song: Song, onNavigateToDetail: (String) -> Unit) {
 //    var expanded by remember { mutableStateOf(false) }
     Card (
         modifier = Modifier.clickable {
 //            expanded = !expanded
-            navController.navigate("Detail/$index")
+            onNavigateToDetail("Detail/$index")
             },
         elevation = CardDefaults.cardElevation(8.dp)
     ){
@@ -108,7 +114,7 @@ fun SongItem(navController: NavController, songList: List<Song>, index: Int) {
                 .padding(8.dp)
         ) {
             AsyncImage(
-                model = "https://picsum.photos/300/300?random=${songList[index].id}",
+                model = "https://picsum.photos/300/300?random=${song.id}",
                 contentDescription = "노래 앨범 사진",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -123,8 +129,8 @@ fun SongItem(navController: NavController, songList: List<Song>, index: Int) {
 //                .background(Color(0, 210, 210)) ,
                 verticalArrangement = Arrangement.SpaceAround
             ) {
-                TextTitle(songList[index].title)
-                TextSinger(songList[index].singer)
+                TextTitle(song.title)
+                TextSinger(song.singer)
             }
         }
     }
@@ -142,6 +148,8 @@ fun TextSinger(singer: String) {
 
 @Composable
 fun SongDetail(song: Song) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .padding(16.dp)
@@ -189,6 +197,50 @@ fun SongDetail(song: Song) {
                 textAlign = TextAlign.Center
             )
         }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://www.youtube.com/results?search_query=노래방+${song.id}")
+                )
+                startActivity(context, intent, null)
+            }
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                YoutubeIcon()
+                Spacer(modifier = Modifier.width(16.dp))
+                Text("노래방 검색", fontSize = 30.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun YoutubeIcon() {
+    Canvas(
+        modifier = Modifier
+            .size(70.dp)
+    ) {
+
+        val path = Path().apply {
+            moveTo(size.width * .43f, size.height * .38f)
+            lineTo(size.width * .72f, size.height * .55f)
+            lineTo(size.width * .43f, size.height * .73f)
+            close()
+        }
+        drawRoundRect(
+            color = Color.Red,
+            cornerRadius = CornerRadius(40f, 40f),
+            size = Size(size.width, size.height * .70f),
+            topLeft = Offset(size.width.times(.0f), size.height.times(.20f))
+        )
+        drawPath(color = Color.White, path = path)
     }
 }
 
